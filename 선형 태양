@@ -1,0 +1,80 @@
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.linear_model import LinearRegression
+import time
+
+# 데이터 저장용 리스트
+X_data = []
+y_data = []
+
+# 선형 회귀 모델 초기화
+model = LinearRegression()
+
+# 실시간 그래프 업데이트를 위한 설정
+plt.ion()
+fig, ax = plt.subplots(figsize=(8, 6))
+sc = ax.scatter([], [], color='orange', label="Actual Data")
+line, = ax.plot([], [], color='blue', label="Prediction", linewidth=2)
+
+# 그래프 기본 설정
+ax.set_title("Solar Prediction")
+ax.set_xlabel("Time (Hours)")
+ax.set_ylabel("Solar Power Output (kW)")
+ax.legend()
+
+# 텍스트 출력 초기화 (현재 값, 평균 값, 예측 값)
+current_text = ax.text(0.02, 0.95, '', transform=ax.transAxes)
+mean_text = ax.text(0.02, 0.90, '', transform=ax.transAxes)
+pred_text = ax.text(0.02, 0.85, '', transform=ax.transAxes)
+
+# 실시간 데이터 업데이트 함수
+def update_data(new_X, new_y):
+    X_data.append(new_X)
+    y_data.append(new_y)
+
+    # 전처리: 데이터 numpy 배열로 변환
+    X_np = np.array(X_data).reshape(-1, 1)
+    y_np = np.array(y_data).reshape(-1, 1)
+    
+    # 선형 회귀 모델 학습
+    if len(X_data) > 1:  # 최소한 두 개의 데이터가 있어야 학습 가능
+        model.fit(X_np, y_np)
+        y_pred = model.predict(X_np)
+    else:
+        y_pred = np.array(y_data).reshape(-1, 1)  # 데이터가 하나인 경우 예측 불가, 그대로 표시
+
+    # 현재 값, 평균 값, 예측 값 계산
+    current_val = new_y
+    mean_val = np.mean(y_data)
+    predicted_val = model.predict(np.array([[new_X]]))[0][0] if len(X_data) > 1 else new_y
+
+    # 그래프 업데이트
+    sc.set_offsets(np.c_[X_data, y_data])
+    line.set_data(X_data, y_pred)
+
+    ax.relim()
+    ax.autoscale_view()
+
+    # 텍스트 업데이트
+    current_text.set_text(f"Current Value: {current_val:.2f} kW")
+    mean_text.set_text(f"Mean Value: {mean_val:.2f} kW")
+    pred_text.set_text(f"Predicted Value: {predicted_val:.2f} kW")
+
+    plt.draw()
+    plt.pause(0.1)
+
+# 실시간 데이터 생성 및 처리
+for t in range(1, 101):
+    # 새로운 데이터 생성 (가상의 태양광 데이터, 약간의 랜덤 변동 포함)
+    new_X = t
+    new_y = 3 * t + np.random.randn() * 20  # 태양광 발전량
+
+    # 데이터 업데이트 및 모델 학습
+    update_data(new_X, new_y)
+
+    # 잠시 대기 (실시간 효과를 주기 위해)
+    time.sleep(0.5)
+
+plt.ioff()
+plt.show()
+
